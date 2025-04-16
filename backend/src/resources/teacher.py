@@ -61,7 +61,7 @@ class TeacherLogin(Resource):
 
         teacher = TeacherModel.find_by_username(teacher_data.username)
 
-        if teacher and safe_str_cmp(teacher.password, teacher_data.password):
+        if teacher and hmac.compare_digest(teacher.password, teacher_data.password):
             access_token = create_access_token(identity=teacher.id, fresh=True)
             refresh_token = create_refresh_token(teacher.id)
             return {"access_token": access_token, "refresh_token": refresh_token}, 200
