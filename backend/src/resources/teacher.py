@@ -1,11 +1,7 @@
 from flask_restful import Resource
 from flask import request
-import hmac
-
-from flask_jwt_extended import (
-    create_access_token,
-    create_refresh_token
-)
+from werkzeug.security import check_password_hash, generate_password_hash
+from flask_jwt_extended import create_access_token, create_refresh_token
 
 from src.db import Session
 from src.libs.strings import gettext
@@ -48,6 +44,9 @@ class TeacherRegister(Resource):
         if TeacherModel.find_by_username(teacher.username):
             return {"message": gettext("teacher_username_exists")}, 400
 
+        # Hash the password before saving it
+        teacher.password = generate_password_hash(teacher.password)
+
         teacher.save_to_db()
 
         return {"message": gettext("teacher_registered")}, 201
@@ -61,7 +60,8 @@ class TeacherLogin(Resource):
 
         teacher = TeacherModel.find_by_username(teacher_data.username)
 
-        if teacher and hmac.compare_digest(teacher.password, teacher_data.password):
+        # Check if the teacher exists and verify the password
+        if teacher and check_password_hash(teacher.password, teacher_data.password):
             access_token = create_access_token(identity=teacher.id, fresh=True)
             refresh_token = create_refresh_token(teacher.id)
             return {"access_token": access_token, "refresh_token": refresh_token}, 200
